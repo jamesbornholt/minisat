@@ -863,6 +863,9 @@ lbool Solver::solve_()
 
     solves++;
 
+    if (verbose_decisions)
+        printf("\n*** %d vars, %d clauses", nVars(), nClauses());
+
     max_learnts = nClauses() * learntsize_factor;
     if (max_learnts < min_learnts_lim)
         max_learnts = min_learnts_lim;
