@@ -126,6 +126,7 @@ public:
     // Mode of operation:
     //
     int       verbosity;
+    bool      verbose_decisions;
     double    var_decay;
     double    clause_decay;
     double    random_var_freq;
@@ -235,6 +236,8 @@ protected:
     int64_t             conflict_budget;    // -1 means no budget.
     int64_t             propagation_budget; // -1 means no budget.
     bool                asynch_interrupt;
+  
+    int last_print_level;
 
     // Main internal methods:
     //

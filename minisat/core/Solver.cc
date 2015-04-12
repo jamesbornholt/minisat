@@ -56,6 +56,7 @@ Solver::Solver() :
     // Parameters (user settable):
     //
     verbosity        (0)
+  , verbose_decisions(false)
   , var_decay        (opt_var_decay)
   , clause_decay     (opt_clause_decay)
   , random_var_freq  (opt_random_var_freq)
@@ -101,6 +102,8 @@ Solver::Solver() :
   , conflict_budget    (-1)
   , propagation_budget (-1)
   , asynch_interrupt   (false)
+
+  , last_print_level(-1)
 {}
 
 
@@ -229,6 +232,8 @@ bool Solver::satisfied(const Clause& c) const {
 // Revert to the state at given level (keeping all assignment at 'level' but not beyond).
 //
 void Solver::cancelUntil(int level) {
+    if (verbose_decisions)
+        printf("\n*** backtrack: %d->%d", decisionLevel(), level);
     if (decisionLevel() > level){
         for (int c = trail.size()-1; c >= trail_lim[level]; c--){
             Var      x  = var(trail[c]);
@@ -264,15 +269,22 @@ Lit Solver::pickBranchLit()
         }else
             next = order_heap.removeMin();
 
+    Lit ret;
+
     // Choose polarity based on different polarity modes (global or per-variable):
     if (next == var_Undef)
-        return lit_Undef;
+        ret = lit_Undef;
     else if (user_pol[next] != l_Undef)
-        return mkLit(next, user_pol[next] == l_True);
+        ret = mkLit(next, user_pol[next] == l_True);
     else if (rnd_pol)
-        return mkLit(next, drand(random_seed) < 0.5);
+        ret = mkLit(next, drand(random_seed) < 0.5);
     else
-        return mkLit(next, polarity[next]);
+        ret = mkLit(next, polarity[next]);
+
+    if (verbose_decisions && var(ret) != var_Undef)
+        printf("\n*** decide: %d=%d", var(ret), sign(ret));
+
+    return ret;
 }
 
 
@@ -486,6 +498,13 @@ void Solver::analyzeFinal(Lit p, LSet& out_conflict)
 void Solver::uncheckedEnqueue(Lit p, CRef from)
 {
     assert(value(p) == l_Undef);
+    if (verbose_decisions) {
+        if (last_print_level != decisionLevel()) {
+            printf("\n*** level=%d:", decisionLevel());
+            last_print_level = decisionLevel();
+        }
+        printf(" %d=%d", var(p), sign(p));
+    }
     assigns[var(p)] = lbool(!sign(p));
     vardata[var(p)] = mkVarData(from, decisionLevel());
     trail.push_(p);
@@ -880,6 +899,8 @@ lbool Solver::solve_()
         ok = false;
 
     cancelUntil(0);
+    if (verbose_decisions)
+        printf("\n");
     return status;
 }
 
