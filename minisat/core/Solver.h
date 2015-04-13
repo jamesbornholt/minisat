@@ -44,7 +44,7 @@ public:
 
     // Problem specification:
     //
-    Var     newVar    (lbool upol = l_Undef, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+    Var     newVar    (int cost = 0, lbool upol = l_Undef, bool dvar = true); // Add a new variable with parameters specifying variable mode.
     void    releaseVar(Lit l);                                  // Make literal true and promise to never refer to variable again.
 
     bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver. 
@@ -180,6 +180,12 @@ protected:
         VarOrderLt(const IntMap<Var, double>&  act) : activity(act) { }
     };
 
+    struct VarOrderImp {
+        const IntMap<Var, int>& cost;
+        bool operator () (Var x, Var y) const { return cost[x] > cost[y]; }
+        VarOrderImp(const IntMap<Var, int>& c) : cost(c) { }
+    };
+
     struct ShrinkStackElem {
         uint32_t i;
         Lit      l;
@@ -195,6 +201,7 @@ protected:
     vec<Lit>            assumptions;      // Current set of assumptions provided to solve by the user.
 
     VMap<double>        activity;         // A heuristic measurement of the activity of a variable.
+    VMap<int>           imp;
     VMap<lbool>         assigns;          // The current assignments.
     VMap<char>          polarity;         // The preferred polarity of each variable.
     VMap<lbool>         user_pol;         // The users preferred polarity of each variable.
@@ -204,6 +211,8 @@ protected:
                         watches;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
 
     Heap<Var,VarOrderLt>order_heap;       // A priority queue of variables ordered with respect to the variable activity.
+
+    Heap<Var,VarOrderImp> imp_heap;
 
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
     double              cla_inc;          // Amount to bump next clause with.
@@ -307,7 +316,9 @@ inline CRef Solver::reason(Var x) const { return vardata[x].reason; }
 inline int  Solver::level (Var x) const { return vardata[x].level; }
 
 inline void Solver::insertVarOrder(Var x) {
-    if (!order_heap.inHeap(x) && decision[x]) order_heap.insert(x); }
+    if (!order_heap.inHeap(x) && decision[x]) order_heap.insert(x); 
+    if (!imp_heap.inHeap(x) && decision[x] && imp.has(x) && imp[x] > 0)
+        imp_heap.insert(x); }
 
 inline void Solver::varDecayActivity() { var_inc *= (1 / var_decay); }
 inline void Solver::varBumpActivity(Var v) { varBumpActivity(v, var_inc); }

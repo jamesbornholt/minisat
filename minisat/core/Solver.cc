@@ -87,6 +87,7 @@ Solver::Solver() :
 
   , watches            (WatcherDeleted(ca))
   , order_heap         (VarOrderLt(activity))
+  , imp_heap           (VarOrderImp(imp))
   , ok                 (true)
   , cla_inc            (1)
   , var_inc            (1)
@@ -119,7 +120,7 @@ Solver::~Solver()
 // Creates a new SAT variable in the solver. If 'decision' is cleared, variable will not be
 // used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
 //
-Var Solver::newVar(lbool upol, bool dvar)
+Var Solver::newVar(int cost, lbool upol, bool dvar)
 {
     Var v;
     if (free_vars.size() > 0){
@@ -136,12 +137,12 @@ Var Solver::newVar(lbool upol, bool dvar)
     seen     .insert(v, 0);
     polarity .insert(v, true);
     user_pol .insert(v, upol);
+    imp      .insert(v, cost);
     decision .reserve(v);
     trail    .capacity(v+1);
     setDecisionVar(v, dvar);
     return v;
 }
-
 
 // Note: at the moment, only unassigned variable will be released (this is to avoid duplicate
 // releases of the same variable).
@@ -261,6 +262,17 @@ Lit Solver::pickBranchLit()
         if (value(next) == l_Undef && decision[next])
             rnd_decisions++; }
 
+    // importance based decision
+    while (next == var_Undef || value(next) != l_Undef || !decision[next])
+        if (imp_heap.empty()) {
+            next = var_Undef;
+            break;
+        }else
+            next = imp_heap.removeMin();
+
+    if (next != var_Undef && order_heap.inHeap(next))
+        order_heap.remove(next);
+
     // Activity based decision:
     while (next == var_Undef || value(next) != l_Undef || !decision[next])
         if (order_heap.empty()){
@@ -282,7 +294,7 @@ Lit Solver::pickBranchLit()
         ret = mkLit(next, polarity[next]);
 
     if (verbose_decisions && var(ret) != var_Undef)
-        printf("\n*** decide: %d=%d", var(ret), sign(ret));
+        printf("\n*** decide: %d=%d; order_heap=%d, imp_heap=%d", var(ret), sign(ret), order_heap.size(), imp_heap.size());
 
     return ret;
 }
@@ -887,6 +899,8 @@ lbool Solver::solve_()
         double rest_base = luby_restart ? luby(restart_inc, curr_restarts) : pow(restart_inc, curr_restarts);
         status = search(rest_base * restart_first);
         if (!withinBudget()) break;
+        if (verbose_decisions && status == l_Undef)
+            printf("\n*** restarted after exhausting %f conflicts", rest_base*restart_first);
         curr_restarts++;
     }
 

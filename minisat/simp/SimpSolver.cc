@@ -74,8 +74,8 @@ SimpSolver::~SimpSolver()
 }
 
 
-Var SimpSolver::newVar(lbool upol, bool dvar) {
-    Var v = Solver::newVar(upol, dvar);
+Var SimpSolver::newVar(int cost, lbool upol, bool dvar) {
+    Var v = Solver::newVar(cost, upol, dvar);
 
     frozen    .insert(v, (char)false);
     eliminated.insert(v, (char)false);
@@ -88,7 +88,6 @@ Var SimpSolver::newVar(lbool upol, bool dvar) {
         elim_heap .insert(v);
     }
     return v; }
-
 
 void SimpSolver::releaseVar(Lit l)
 {
