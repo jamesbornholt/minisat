@@ -127,6 +127,7 @@ public:
     //
     int       verbosity;
     bool      verbose_decisions;
+    bool      importance;
     double    var_decay;
     double    clause_decay;
     double    random_var_freq;

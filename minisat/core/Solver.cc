@@ -57,6 +57,7 @@ Solver::Solver() :
     //
     verbosity        (0)
   , verbose_decisions(false)
+  , importance       (true)
   , var_decay        (opt_var_decay)
   , clause_decay     (opt_clause_decay)
   , random_var_freq  (opt_random_var_freq)
@@ -262,16 +263,18 @@ Lit Solver::pickBranchLit()
         if (value(next) == l_Undef && decision[next])
             rnd_decisions++; }
 
-    // importance based decision
-    while (next == var_Undef || value(next) != l_Undef || !decision[next])
-        if (imp_heap.empty()) {
-            next = var_Undef;
-            break;
-        }else
-            next = imp_heap.removeMin();
-
-    if (next != var_Undef && order_heap.inHeap(next))
-        order_heap.remove(next);
+    if (importance) {
+        // importance based decision
+        while (next == var_Undef || value(next) != l_Undef || !decision[next])
+            if (imp_heap.empty()) {
+                next = var_Undef;
+                break;
+            }else
+                next = imp_heap.removeMin();
+        
+        if (next != var_Undef && order_heap.inHeap(next))
+            order_heap.remove(next);
+    }
 
     // Activity based decision:
     while (next == var_Undef || value(next) != l_Undef || !decision[next])
