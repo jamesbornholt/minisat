@@ -57,7 +57,7 @@ Solver::Solver() :
     //
     verbosity        (0)
   , verbose_decisions(false)
-  , importance       (true)
+  , importance       (false)
   , var_decay        (opt_var_decay)
   , clause_decay     (opt_clause_decay)
   , random_var_freq  (opt_random_var_freq)
@@ -134,7 +134,7 @@ Var Solver::newVar(int cost, lbool upol, bool dvar)
     watches  .init(mkLit(v, true ));
     assigns  .insert(v, l_Undef);
     vardata  .insert(v, mkVarData(CRef_Undef, 0));
-    activity .insert(v, rnd_init_act ? drand(random_seed) * 0.00001 : 0);
+    activity .insert(v, cost); // rnd_init_act ? drand(random_seed) * 0.00001 : 0);
     seen     .insert(v, 0);
     polarity .insert(v, true);
     user_pol .insert(v, upol);
