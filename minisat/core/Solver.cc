@@ -56,8 +56,7 @@ Solver::Solver() :
     // Parameters (user settable):
     //
     verbosity        (0)
-  , verbose_decisions(false)
-  , importance       (false)
+  , crit_override    (false)
   , var_decay        (opt_var_decay)
   , clause_decay     (opt_clause_decay)
   , random_var_freq  (opt_random_var_freq)
@@ -88,7 +87,7 @@ Solver::Solver() :
 
   , watches            (WatcherDeleted(ca))
   , order_heap         (VarOrderLt(activity))
-  , imp_heap           (VarOrderImp(imp))
+  , crit_heap          (VarOrderCrit(crit))
   , ok                 (true)
   , cla_inc            (1)
   , var_inc            (1)
@@ -138,7 +137,7 @@ Var Solver::newVar(int cost, lbool upol, bool dvar)
     seen     .insert(v, 0);
     polarity .insert(v, true);
     user_pol .insert(v, upol);
-    imp      .insert(v, cost);
+    crit      .insert(v, cost);
     decision .reserve(v);
     trail    .capacity(v+1);
     setDecisionVar(v, dvar);
@@ -234,7 +233,7 @@ bool Solver::satisfied(const Clause& c) const {
 // Revert to the state at given level (keeping all assignment at 'level' but not beyond).
 //
 void Solver::cancelUntil(int level) {
-    if (verbose_decisions)
+    if (verbosity >= 4)
         printf("\n*** backtrack: %d->%d", decisionLevel(), level);
     if (decisionLevel() > level){
         for (int c = trail.size()-1; c >= trail_lim[level]; c--){
@@ -263,14 +262,14 @@ Lit Solver::pickBranchLit()
         if (value(next) == l_Undef && decision[next])
             rnd_decisions++; }
 
-    if (importance) {
-        // importance based decision
+    if (crit_override) {
+        // do critical variables first
         while (next == var_Undef || value(next) != l_Undef || !decision[next])
-            if (imp_heap.empty()) {
+            if (crit_heap.empty()) {
                 next = var_Undef;
                 break;
             }else
-                next = imp_heap.removeMin();
+                next = crit_heap.removeMin();
         
         if (next != var_Undef && order_heap.inHeap(next))
             order_heap.remove(next);
@@ -296,8 +295,8 @@ Lit Solver::pickBranchLit()
     else
         ret = mkLit(next, polarity[next]);
 
-    if (verbose_decisions && var(ret) != var_Undef)
-        printf("\n*** decide: %d=%d; order_heap=%d, imp_heap=%d", var(ret), sign(ret), order_heap.size(), imp_heap.size());
+    if (verbosity >= 4 && var(ret) != var_Undef)
+        printf("\n*** decide: %d=%d; order_heap=%d, crit_heap=%d", var(ret), sign(ret), order_heap.size(), crit_heap.size());
 
     return ret;
 }
@@ -513,7 +512,7 @@ void Solver::analyzeFinal(Lit p, LSet& out_conflict)
 void Solver::uncheckedEnqueue(Lit p, CRef from)
 {
     assert(value(p) == l_Undef);
-    if (verbose_decisions) {
+    if (verbosity >= 5) {
         if (last_print_level != decisionLevel()) {
             printf("\n*** level=%d:", decisionLevel());
             last_print_level = decisionLevel();
@@ -878,7 +877,7 @@ lbool Solver::solve_()
 
     solves++;
 
-    if (verbose_decisions)
+    if (verbosity >= 3)
         printf("\n*** %d vars, %d clauses", nVars(), nClauses());
 
     max_learnts = nClauses() * learntsize_factor;
@@ -902,7 +901,7 @@ lbool Solver::solve_()
         double rest_base = luby_restart ? luby(restart_inc, curr_restarts) : pow(restart_inc, curr_restarts);
         status = search(rest_base * restart_first);
         if (!withinBudget()) break;
-        if (verbose_decisions && status == l_Undef)
+        if (verbosity >= 3 && status == l_Undef)
             printf("\n*** restarted after exhausting %f conflicts", rest_base*restart_first);
         curr_restarts++;
     }
@@ -919,7 +918,7 @@ lbool Solver::solve_()
         ok = false;
 
     cancelUntil(0);
-    if (verbose_decisions)
+    if (verbosity >= 3)
         printf("\n");
     return status;
 }

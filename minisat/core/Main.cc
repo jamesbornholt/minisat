@@ -64,9 +64,6 @@ int main(int argc, char** argv)
         IntOption    cpu_lim("MAIN", "cpu-lim","Limit on CPU time allowed in seconds.\n", 0, IntRange(0, INT32_MAX));
         IntOption    mem_lim("MAIN", "mem-lim","Limit on memory usage in megabytes.\n", 0, IntRange(0, INT32_MAX));
         BoolOption   strictp("MAIN", "strict", "Validate DIMACS header during parsing.", false);
-        
-        BoolOption   trace("MAIN", "trace", "Output trace info", false);
-        BoolOption   importance("MAIN", "importance", "Use importance info", true);
 
         parseOptions(argc, argv, true);
 
@@ -74,8 +71,6 @@ int main(int argc, char** argv)
         double initial_time = cpuTime();
 
         S.verbosity = verb;
-        S.verbose_decisions = (bool)trace;
-        S.importance = (bool)importance;
         
         solver = &S;
         // Use signal handlers that forcibly quit until the solver will be able to respond to

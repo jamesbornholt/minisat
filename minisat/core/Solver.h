@@ -127,7 +127,7 @@ public:
     //
     int       verbosity;
     bool      verbose_decisions;
-    bool      importance;
+    bool      crit_override;
     double    var_decay;
     double    clause_decay;
     double    random_var_freq;
@@ -181,10 +181,10 @@ protected:
         VarOrderLt(const IntMap<Var, double>&  act) : activity(act) { }
     };
 
-    struct VarOrderImp {
+    struct VarOrderCrit {
         const IntMap<Var, int>& cost;
         bool operator () (Var x, Var y) const { return cost[x] > cost[y]; }
-        VarOrderImp(const IntMap<Var, int>& c) : cost(c) { }
+        VarOrderCrit(const IntMap<Var, int>& c) : cost(c) { }
     };
 
     struct ShrinkStackElem {
@@ -202,7 +202,7 @@ protected:
     vec<Lit>            assumptions;      // Current set of assumptions provided to solve by the user.
 
     VMap<double>        activity;         // A heuristic measurement of the activity of a variable.
-    VMap<int>           imp;
+    VMap<int>           crit;
     VMap<lbool>         assigns;          // The current assignments.
     VMap<char>          polarity;         // The preferred polarity of each variable.
     VMap<lbool>         user_pol;         // The users preferred polarity of each variable.
@@ -213,7 +213,7 @@ protected:
 
     Heap<Var,VarOrderLt>order_heap;       // A priority queue of variables ordered with respect to the variable activity.
 
-    Heap<Var,VarOrderImp> imp_heap;
+    Heap<Var,VarOrderCrit> crit_heap;
 
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
     double              cla_inc;          // Amount to bump next clause with.
@@ -318,8 +318,8 @@ inline int  Solver::level (Var x) const { return vardata[x].level; }
 
 inline void Solver::insertVarOrder(Var x) {
     if (!order_heap.inHeap(x) && decision[x]) order_heap.insert(x); 
-    if (!imp_heap.inHeap(x) && decision[x] && imp.has(x) && imp[x] > 0)
-        imp_heap.insert(x); }
+    if (!crit_heap.inHeap(x) && decision[x] && crit.has(x) && crit[x] > 0)
+        crit_heap.insert(x); }
 
 inline void Solver::varDecayActivity() { var_inc *= (1 / var_decay); }
 inline void Solver::varBumpActivity(Var v) { varBumpActivity(v, var_inc); }
