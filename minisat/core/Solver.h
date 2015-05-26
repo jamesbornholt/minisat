@@ -326,7 +326,13 @@ inline void Solver::insertVarOrder(Var x) {
 inline void Solver::varDecayActivity() { var_inc *= (1 / var_decay); }
 inline void Solver::varBumpActivity(Var v) { varBumpActivity(v, var_inc); }
 inline void Solver::varBumpActivity(Var v, double inc) {
-    if ( (activity[v] += inc) > 1e100 ) {
+    if (var_to_group.has(v) && var_to_group[v] > 0) {
+        int g = var_to_group[v];
+        vec<Var> *vv = group_to_vars[g];
+        for (int i = 0; i < vv->size(); i++)
+            activity[vv->operator[](i)] += inc;
+    } else activity[v] += inc;
+    if ( (activity[v]) > 1e100 ) {
         // Rescale:
         for (int i = 0; i < nVars(); i++)
             activity[i] *= 1e-100;

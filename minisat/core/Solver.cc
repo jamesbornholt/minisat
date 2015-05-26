@@ -140,13 +140,9 @@ Var Solver::newVar(int cost, int group, lbool upol, bool dvar)
     crit      .insert(v, cost);
     if (group > 0) {
         var_to_group.insert(v, group);
-        printf("inserting group %d\n", group);
-        if (!group_to_vars.has(group))
+        if (!group_to_vars.has(group) || group_to_vars[group] == NULL)
             group_to_vars.insert(group, new vec<Var>());
-        printf("group_to_vars[group] = %p\n", group_to_vars[group]);
-        printf("group %d size before: %d\n", group, group_to_vars[group]->size());
         group_to_vars[group]->push(v);
-        printf("group %d size after: %d\n", group, group_to_vars[group]->size());
     }
     decision .reserve(v);
     trail    .capacity(v+1);
