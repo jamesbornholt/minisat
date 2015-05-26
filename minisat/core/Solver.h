@@ -44,7 +44,7 @@ public:
 
     // Problem specification:
     //
-    Var     newVar    (int cost = 0, lbool upol = l_Undef, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+    Var     newVar    (int cost = 0, int group = 0, lbool upol = l_Undef, bool dvar = true); // Add a new variable with parameters specifying variable mode.
     void    releaseVar(Lit l);                                  // Make literal true and promise to never refer to variable again.
 
     bool    addClause (const vec<Lit>& ps);                     // Add a clause to the solver. 
@@ -203,6 +203,8 @@ protected:
 
     VMap<double>        activity;         // A heuristic measurement of the activity of a variable.
     VMap<int>           crit;
+    VMap<int>           var_to_group;
+    IntMap<int, vec<Var>* > group_to_vars;
     VMap<lbool>         assigns;          // The current assignments.
     VMap<char>          polarity;         // The preferred polarity of each variable.
     VMap<lbool>         user_pol;         // The users preferred polarity of each variable.

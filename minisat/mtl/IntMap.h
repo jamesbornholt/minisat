@@ -20,6 +20,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define Minisat_IntMap_h
 
 #include "minisat/mtl/Vec.h"
+#include <stdio.h>
 
 namespace Minisat {
 
@@ -45,7 +46,7 @@ namespace Minisat {
         V*       end    ()       { return &map[map.size()]; }
 
         void     reserve(K key, V pad)       { map.growTo(index(key)+1, pad); }
-        void     reserve(K key)              { map.growTo(index(key)+1); }
+        void     reserve(K key)              { printf("index=%d\n", index(key)); map.growTo(index(key)+1); }
         void     insert (K key, V val, V pad){ reserve(key, pad); operator[](key) = val; }
         void     insert (K key, V val)       { reserve(key); operator[](key) = val; }
 

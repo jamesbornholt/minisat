@@ -74,8 +74,8 @@ SimpSolver::~SimpSolver()
 }
 
 
-Var SimpSolver::newVar(int cost, lbool upol, bool dvar) {
-    Var v = Solver::newVar(cost, upol, dvar);
+Var SimpSolver::newVar(int cost, int group, lbool upol, bool dvar) {
+    Var v = Solver::newVar(cost, group, upol, dvar);
 
     frozen    .insert(v, (char)false);
     eliminated.insert(v, (char)false);
